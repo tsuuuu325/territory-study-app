@@ -13,7 +13,7 @@ export function defaultAppData(): AppData {
     sessions: [],
     settings: {
       color: "#3B82F6",
-      nickname: "つかさ",
+      nickname: "",
     },
   };
 }

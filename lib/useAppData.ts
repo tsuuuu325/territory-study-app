@@ -38,7 +38,7 @@ export function useAppData() {
   }, [data]);
 
   useEffect(() => {
-    if (!data || data.ownedCells.length === 0) return;
+    if (!data || data.ownedCells.length === 0 || !data.settings.nickname.trim()) return;
     const ids = data.ownedCells.map((c) => c.cellId);
     upsertRanking(data.playerId, data.settings.nickname, totalAreaKm2(ids));
     // eslint-disable-next-line react-hooks/exhaustive-deps

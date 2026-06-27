@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppData } from "@/lib/useAppData";
 
 const COLOR_OPTIONS = [
@@ -17,15 +17,21 @@ export default function SettingsPage() {
   const { data, updateSettings } = useAppData();
   const [nickname, setNickname] = useState("");
   const [saved, setSaved] = useState(false);
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (data && !initialized.current) {
+      setNickname(data.settings.nickname);
+      initialized.current = true;
+    }
+  }, [data]);
 
   if (!data) {
     return <div className="flex flex-1 items-center justify-center text-gray-400">読み込み中...</div>;
   }
 
-  const currentNickname = nickname || data.settings.nickname;
-
   function handleSave() {
-    const trimmed = currentNickname.trim();
+    const trimmed = nickname.trim();
     if (!trimmed) return;
     updateSettings({ nickname: trimmed });
     setSaved(true);
@@ -42,7 +48,7 @@ export default function SettingsPage() {
 
       <label className="mb-2 text-sm font-medium text-gray-700">ニックネーム</label>
       <input
-        value={currentNickname}
+        value={nickname}
         onChange={(e) => setNickname(e.target.value)}
         maxLength={20}
         className="mb-6 rounded-lg border border-gray-300 px-4 py-3 text-base"
@@ -67,7 +73,8 @@ export default function SettingsPage() {
 
       <button
         onClick={handleSave}
-        className="rounded-full bg-blue-600 px-6 py-3 font-semibold text-white"
+        disabled={!nickname.trim()}
+        className="rounded-full bg-blue-600 px-6 py-3 font-semibold text-white disabled:opacity-40"
       >
         {saved ? "保存しました！" : "ニックネームを保存"}
       </button>
