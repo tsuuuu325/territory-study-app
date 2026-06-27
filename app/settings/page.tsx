@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAppData } from "@/lib/useAppData";
+import { isNicknameTaken } from "@/lib/supabase";
 
 const COLOR_OPTIONS = [
   "#3B82F6",
@@ -17,6 +18,8 @@ export default function SettingsPage() {
   const { data, updateSettings } = useAppData();
   const [nickname, setNickname] = useState("");
   const [saved, setSaved] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -30,9 +33,20 @@ export default function SettingsPage() {
     return <div className="flex flex-1 items-center justify-center text-gray-400">読み込み中...</div>;
   }
 
-  function handleSave() {
+  async function handleSave() {
     const trimmed = nickname.trim();
     if (!trimmed) return;
+
+    setError(null);
+    setChecking(true);
+    const taken = await isNicknameTaken(trimmed, data!.playerId);
+    setChecking(false);
+
+    if (taken) {
+      setError("このニックネームは既に使われています。別の名前にしてください");
+      return;
+    }
+
     updateSettings({ nickname: trimmed });
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
@@ -49,11 +63,16 @@ export default function SettingsPage() {
       <label className="mb-2 text-sm font-medium text-gray-700">ニックネーム</label>
       <input
         value={nickname}
-        onChange={(e) => setNickname(e.target.value)}
+        onChange={(e) => {
+          setNickname(e.target.value);
+          setError(null);
+        }}
         maxLength={20}
-        className="mb-6 rounded-lg border border-gray-300 px-4 py-3 text-base"
+        className="mb-2 rounded-lg border border-gray-300 px-4 py-3 text-base"
         placeholder="ニックネームを入力"
       />
+      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {!error && <div className="mb-6" />}
 
       <label className="mb-2 text-sm font-medium text-gray-700">領土の色</label>
       <div className="mb-8 flex gap-3">
@@ -73,10 +92,10 @@ export default function SettingsPage() {
 
       <button
         onClick={handleSave}
-        disabled={!nickname.trim()}
+        disabled={!nickname.trim() || checking}
         className="rounded-full bg-blue-600 px-6 py-3 font-semibold text-white disabled:opacity-40"
       >
-        {saved ? "保存しました！" : "ニックネームを保存"}
+        {checking ? "確認中..." : saved ? "保存しました！" : "ニックネームを保存"}
       </button>
     </div>
   );
