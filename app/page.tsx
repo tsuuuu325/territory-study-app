@@ -1,65 +1,106 @@
-import Image from "next/image";
+"use client";
+
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import StatsBar from "@/components/StatsBar";
+import ResultModal from "@/components/ResultModal";
+import { useAppData } from "@/lib/useAppData";
+import { totalAreaKm2 } from "@/lib/territory";
+
+const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
+
+const REVEAL_INTERVAL_MS = 180;
+
+function HomeContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data, landChecker, pickStartCell, completeFocusSession } = useAppData();
+
+  const [newCellIds, setNewCellIds] = useState<string[]>([]);
+  const [revealedCount, setRevealedCount] = useState(0);
+  const [sessionMinutes, setSessionMinutes] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const processedRef = useRef(false);
+
+  useEffect(() => {
+    const completed = searchParams.get("completed");
+    if (!completed || processedRef.current || !data || !landChecker) return;
+    processedRef.current = true;
+
+    const minutes = Number(completed);
+    const earned = completeFocusSession(minutes);
+
+    setSessionMinutes(minutes);
+    setNewCellIds(earned);
+    setRevealedCount(0);
+    setModalOpen(true);
+    router.replace("/");
+  }, [searchParams, data, landChecker, completeFocusSession, router]);
+
+  useEffect(() => {
+    if (!modalOpen || revealedCount >= newCellIds.length) return;
+    const timer = setTimeout(() => setRevealedCount((c) => c + 1), REVEAL_INTERVAL_MS);
+    return () => clearTimeout(timer);
+  }, [modalOpen, revealedCount, newCellIds.length]);
+
+  if (!data) {
+    return <div className="flex flex-1 items-center justify-center text-gray-400">読み込み中...</div>;
+  }
+
+  const allOwnedIds = data.ownedCells.map((c) => c.cellId);
+  const revealingIds = new Set(newCellIds.slice(0, revealedCount));
+  const displayedIds = modalOpen
+    ? allOwnedIds.filter((id) => !newCellIds.includes(id) || revealingIds.has(id))
+    : allOwnedIds;
+
+  const revealing = modalOpen && revealedCount < newCellIds.length;
+
+  return (
+    <div className="relative flex h-dvh flex-col">
+      <div className="relative flex-1">
+        <MapView
+          ownedCellIds={displayedIds}
+          color={data.settings.color}
+          onMapClick={
+            !data.startCell ? (lat, lng) => pickStartCell(lat, lng) : undefined
+          }
+        />
+        {!data.startCell && (
+          <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 rounded-full bg-white/95 px-4 py-2 text-sm font-medium text-gray-700 shadow">
+            地図をタップして起点となる場所を選んでください
+          </div>
+        )}
+        {data.startCell && (
+          <Link
+            href="/focus"
+            className="absolute bottom-6 right-6 z-[500] rounded-full bg-blue-600 px-6 py-4 font-semibold text-white shadow-lg active:scale-95"
+          >
+            集中スタート
+          </Link>
+        )}
+      </div>
+      <StatsBar
+        areaKm2={totalAreaKm2(allOwnedIds)}
+        totalFocusMinutes={data.totalFocusMinutes}
+      />
+      {modalOpen && (
+        <ResultModal
+          durationMinutes={sessionMinutes}
+          cellsEarned={newCellIds.length}
+          revealing={revealing}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }
