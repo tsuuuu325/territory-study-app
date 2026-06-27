@@ -8,6 +8,7 @@ import StatsBar from "@/components/StatsBar";
 import ResultModal from "@/components/ResultModal";
 import { useAppData } from "@/lib/useAppData";
 import { totalAreaKm2 } from "@/lib/territory";
+import { useTranslation } from "@/lib/useTranslation";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
@@ -20,6 +21,7 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const { data, landChecker, pickStartCell, completeFocusSession, claimNewIsland } =
     useAppData();
+  const t = useTranslation(data);
 
   const [newCellIds, setNewCellIds] = useState<string[]>([]);
   const [revealedCount, setRevealedCount] = useState(0);
@@ -64,7 +66,7 @@ function HomeContent() {
   }, [modalOpen, revealedCount, newCellIds.length]);
 
   if (!data) {
-    return <div className="flex flex-1 items-center justify-center text-gray-400">読み込み中...</div>;
+    return <div className="flex flex-1 items-center justify-center text-gray-400">{t("loading")}</div>;
   }
 
   const allOwnedIds = data.ownedCells.map((c) => c.cellId);
@@ -85,7 +87,7 @@ function HomeContent() {
   function handleConfirmPick() {
     if (!pendingPick) return;
     if (landChecker && !landChecker.isLand(pendingPick.lat, pendingPick.lng)) {
-      setPickError("海上です。陸地をタップしてください");
+      setPickError(t("seaError"));
       return;
     }
 
@@ -136,30 +138,30 @@ function HomeContent() {
         />
         {pickingMode === "initial" && !pendingPick && (
           <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 rounded-full bg-white/95 px-4 py-2 text-sm font-medium text-gray-700 shadow">
-            地図をタップして起点となる場所を選んでください
+            {t("pickInitialPrompt")}
           </div>
         )}
         {pickingMode === "newIsland" && !pendingPick && (
           <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 rounded-full bg-white/95 px-4 py-2 text-sm font-medium text-gray-700 shadow">
-            陸地を使い切りました。次の島の出発点をタップしてください
+            {t("pickNewIslandPrompt")}
           </div>
         )}
         {pendingPick && (
           <div className="absolute bottom-6 left-1/2 z-[500] flex w-[90%] max-w-sm -translate-x-1/2 flex-col gap-2 rounded-2xl bg-white p-4 shadow-lg">
             {pickError && <p className="text-center text-sm text-red-600">{pickError}</p>}
-            <p className="text-center text-sm text-gray-600">この場所でよろしいですか？</p>
+            <p className="text-center text-sm text-gray-600">{t("confirmPickQuestion")}</p>
             <div className="flex gap-3">
               <button
                 onClick={handleCancelPick}
                 className="flex-1 rounded-full border border-gray-300 px-4 py-2 font-medium text-gray-700"
               >
-                キャンセル
+                {t("cancel")}
               </button>
               <button
                 onClick={handleConfirmPick}
                 className="flex-1 rounded-full bg-blue-600 px-4 py-2 font-semibold text-white"
               >
-                決定
+                {t("confirmButton")}
               </button>
             </div>
           </div>
@@ -169,14 +171,14 @@ function HomeContent() {
             href="/focus"
             className="absolute bottom-6 right-6 z-[500] rounded-full bg-blue-600 px-6 py-4 font-semibold text-white shadow-lg active:scale-95"
           >
-            集中スタート
+            {t("startFocusButton")}
           </Link>
         )}
         {!pickingMode && (
           <Link
             href="/settings"
             className="absolute top-4 right-4 z-[500] flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-lg shadow"
-            aria-label="設定"
+            aria-label={t("settingsAria")}
           >
             ⚙️
           </Link>
@@ -185,16 +187,21 @@ function HomeContent() {
       <StatsBar
         areaKm2={totalAreaKm2(allOwnedIds)}
         totalFocusMinutes={data.totalFocusMinutes}
+        t={t}
       />
       {modalOpen && (
         <ResultModal
           headline={
-            modalKind === "session" ? `${sessionMinutes}分集中しました！` : "新しい島を開拓しました！"
+            modalKind === "session"
+              ? t("headlineSession", { minutes: sessionMinutes })
+              : t("headlineNewIsland")
           }
-          cellsEarned={newCellIds.length}
+          cellsEarnedText={t("cellsEarned", { count: newCellIds.length })}
+          cellsEarnedNote={t("cellsEarnedNote")}
           revealing={revealing}
-          closeLabel={exhausted ? "次の島の出発点を選ぶ" : "マップに戻る"}
-          exhaustedNote={exhausted ? "陸地を使い切りました。次の島へ進みましょう" : undefined}
+          revealingLabel={t("revealingLabel")}
+          closeLabel={exhausted ? t("closeNewIsland") : t("closeMap")}
+          exhaustedNote={exhausted ? t("exhaustedNote") : undefined}
           onClose={handleModalClose}
         />
       )}

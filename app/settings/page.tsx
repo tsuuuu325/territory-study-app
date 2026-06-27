@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAppData } from "@/lib/useAppData";
 import { isNicknameTaken } from "@/lib/supabase";
+import { useTranslation } from "@/lib/useTranslation";
+import { LANGUAGES, Lang } from "@/lib/i18n";
 
 const COLOR_OPTIONS = [
   "#3B82F6",
@@ -16,6 +18,7 @@ const COLOR_OPTIONS = [
 
 export default function SettingsPage() {
   const { data, updateSettings } = useAppData();
+  const t = useTranslation(data);
   const [nickname, setNickname] = useState("");
   const [saved, setSaved] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -30,7 +33,7 @@ export default function SettingsPage() {
   }, [data]);
 
   if (!data) {
-    return <div className="flex flex-1 items-center justify-center text-gray-400">読み込み中...</div>;
+    return <div className="flex flex-1 items-center justify-center text-gray-400">{t("loading")}</div>;
   }
 
   const locked = data.settings.nicknameLocked;
@@ -45,7 +48,7 @@ export default function SettingsPage() {
     setChecking(false);
 
     if (taken) {
-      setError("このニックネームは既に使われています。別の名前にしてください");
+      setError(t("nicknameTakenError"));
       return;
     }
 
@@ -57,15 +60,16 @@ export default function SettingsPage() {
   return (
     <div className="flex h-dvh flex-col bg-gray-50 px-6 py-8">
       <Link href="/" className="mb-6 text-sm text-blue-600">
-        ← マップに戻る
+        {t("backToMap")}
       </Link>
 
-      <h1 className="mb-6 text-xl font-bold text-gray-900">設定</h1>
+      <h1 className="mb-6 text-xl font-bold text-gray-900">{t("settingsTitle")}</h1>
 
-      <label className="mb-2 text-sm font-medium text-gray-700">ニックネーム</label>
+      <label className="mb-2 text-sm font-medium text-gray-700">{t("nicknameLabel")}</label>
       {locked ? (
         <p className="mb-6 rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 text-base text-gray-700">
-          {data.settings.nickname}（変更できません）
+          {data.settings.nickname}
+          {t("nicknameLockedSuffix")}
         </p>
       ) : (
         <>
@@ -77,15 +81,15 @@ export default function SettingsPage() {
             }}
             maxLength={20}
             className="mb-2 rounded-lg border border-gray-300 px-4 py-3 text-base"
-            placeholder="ニックネームを入力"
+            placeholder={t("nicknamePlaceholder")}
           />
-          <p className="mb-2 text-xs text-gray-500">一度保存すると変更できません</p>
+          <p className="mb-2 text-xs text-gray-500">{t("nicknameLockNotice")}</p>
           {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
           {!error && <div className="mb-4" />}
         </>
       )}
 
-      <label className="mb-2 text-sm font-medium text-gray-700">領土の色</label>
+      <label className="mb-2 text-sm font-medium text-gray-700">{t("colorLabel")}</label>
       <div className="mb-8 flex gap-3">
         {COLOR_OPTIONS.map((color) => (
           <button
@@ -101,13 +105,26 @@ export default function SettingsPage() {
         ))}
       </div>
 
+      <label className="mb-2 text-sm font-medium text-gray-700">{t("languageLabel")}</label>
+      <select
+        value={data.settings.language}
+        onChange={(e) => updateSettings({ language: e.target.value as Lang })}
+        className="mb-8 rounded-lg border border-gray-300 px-4 py-3 text-base"
+      >
+        {LANGUAGES.map((l) => (
+          <option key={l.code} value={l.code}>
+            {l.label}
+          </option>
+        ))}
+      </select>
+
       {!locked && (
         <button
           onClick={handleSave}
           disabled={!nickname.trim() || checking}
           className="rounded-full bg-blue-600 px-6 py-3 font-semibold text-white disabled:opacity-40"
         >
-          {checking ? "確認中..." : saved ? "保存しました！" : "ニックネームを保存"}
+          {checking ? t("checkingButton") : saved ? t("savedButton") : t("saveNicknameButton")}
         </button>
       )}
     </div>

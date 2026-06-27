@@ -1,3 +1,5 @@
+import { Lang } from "./i18n";
+
 export interface OwnedCell {
   cellId: string;
   ownerId: string;
@@ -16,6 +18,7 @@ export interface Settings {
   color: string;
   nickname: string;
   nicknameLocked: boolean;
+  language: Lang;
 }
 
 export interface AppData {

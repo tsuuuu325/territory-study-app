@@ -1,5 +1,6 @@
 import { v4 as uuid } from "uuid";
 import { AppData } from "./types";
+import { detectDefaultLang } from "./i18n";
 
 const STORAGE_KEY = "territory-study-app:data";
 export const LOCAL_OWNER_ID = "local-player";
@@ -15,6 +16,7 @@ export function defaultAppData(): AppData {
       color: "#3B82F6",
       nickname: "",
       nicknameLocked: false,
+      language: detectDefaultLang(),
     },
   };
 }
@@ -25,7 +27,12 @@ export function loadAppData(): AppData {
   if (!raw) return defaultAppData();
   try {
     const parsed = JSON.parse(raw) as AppData;
-    return { ...defaultAppData(), ...parsed };
+    const fallback = defaultAppData();
+    return {
+      ...fallback,
+      ...parsed,
+      settings: { ...fallback.settings, ...parsed.settings },
+    };
   } catch {
     return defaultAppData();
   }

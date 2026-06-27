@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useAppData } from "@/lib/useAppData";
+import { useTranslation } from "@/lib/useTranslation";
 
 function formatTime(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
@@ -24,6 +26,8 @@ function getDOE(): DeviceOrientationEventStatic | undefined {
 
 export default function FocusPage() {
   const router = useRouter();
+  const { data } = useAppData();
+  const t = useTranslation(data);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const [orientationMode, setOrientationMode] = useState<OrientationMode>("checking");
@@ -141,22 +145,19 @@ export default function FocusPage() {
       </div>
 
       <p className="text-center text-sm text-gray-400">
-        {orientationMode === "checking" && "センサーを確認中..."}
+        {orientationMode === "checking" && t("checkingSensor")}
         {orientationMode === "supported" &&
-          (faceDown ? "計測中：画面を伏せています" : "スマホを裏返すと計測が始まります")}
-        {orientationMode === "unsupported" &&
-          "このデバイスでは裏返し検知が使えません（対応スマホのブラウザで開いてください）"}
+          (faceDown ? t("measuringFaceDown") : t("flipToStart"))}
+        {orientationMode === "unsupported" && t("sensorUnsupported")}
       </p>
-      <p className="text-center text-xs text-gray-500">
-        この画面を開いている間は自動消灯しません
-      </p>
+      <p className="text-center text-xs text-gray-500">{t("noAutoLockNote")}</p>
 
       {orientationMode === "needsPermission" && (
         <button
           onClick={handleRequestPermission}
           className="rounded-full bg-green-500 px-8 py-4 text-lg font-semibold text-gray-900"
         >
-          センサーの使用を許可する
+          {t("requestPermissionButton")}
         </button>
       )}
 
@@ -165,7 +166,7 @@ export default function FocusPage() {
         disabled={elapsedSeconds === 0}
         className="rounded-full bg-red-600 px-8 py-4 text-lg font-semibold disabled:opacity-40"
       >
-        集中終了
+        {t("finishButton")}
       </button>
     </div>
   );
