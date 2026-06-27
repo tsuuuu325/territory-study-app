@@ -33,6 +33,8 @@ export default function SettingsPage() {
     return <div className="flex flex-1 items-center justify-center text-gray-400">読み込み中...</div>;
   }
 
+  const locked = data.settings.nicknameLocked;
+
   async function handleSave() {
     const trimmed = nickname.trim();
     if (!trimmed) return;
@@ -47,7 +49,7 @@ export default function SettingsPage() {
       return;
     }
 
-    updateSettings({ nickname: trimmed });
+    updateSettings({ nickname: trimmed, nicknameLocked: true });
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
   }
@@ -61,18 +63,27 @@ export default function SettingsPage() {
       <h1 className="mb-6 text-xl font-bold text-gray-900">設定</h1>
 
       <label className="mb-2 text-sm font-medium text-gray-700">ニックネーム</label>
-      <input
-        value={nickname}
-        onChange={(e) => {
-          setNickname(e.target.value);
-          setError(null);
-        }}
-        maxLength={20}
-        className="mb-2 rounded-lg border border-gray-300 px-4 py-3 text-base"
-        placeholder="ニックネームを入力"
-      />
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-      {!error && <div className="mb-6" />}
+      {locked ? (
+        <p className="mb-6 rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 text-base text-gray-700">
+          {data.settings.nickname}（変更できません）
+        </p>
+      ) : (
+        <>
+          <input
+            value={nickname}
+            onChange={(e) => {
+              setNickname(e.target.value);
+              setError(null);
+            }}
+            maxLength={20}
+            className="mb-2 rounded-lg border border-gray-300 px-4 py-3 text-base"
+            placeholder="ニックネームを入力"
+          />
+          <p className="mb-2 text-xs text-gray-500">一度保存すると変更できません</p>
+          {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+          {!error && <div className="mb-4" />}
+        </>
+      )}
 
       <label className="mb-2 text-sm font-medium text-gray-700">領土の色</label>
       <div className="mb-8 flex gap-3">
@@ -90,13 +101,15 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      <button
-        onClick={handleSave}
-        disabled={!nickname.trim() || checking}
-        className="rounded-full bg-blue-600 px-6 py-3 font-semibold text-white disabled:opacity-40"
-      >
-        {checking ? "確認中..." : saved ? "保存しました！" : "ニックネームを保存"}
-      </button>
+      {!locked && (
+        <button
+          onClick={handleSave}
+          disabled={!nickname.trim() || checking}
+          className="rounded-full bg-blue-600 px-6 py-3 font-semibold text-white disabled:opacity-40"
+        >
+          {checking ? "確認中..." : saved ? "保存しました！" : "ニックネームを保存"}
+        </button>
+      )}
     </div>
   );
 }

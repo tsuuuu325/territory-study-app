@@ -14,6 +14,7 @@ export function defaultAppData(): AppData {
     settings: {
       color: "#3B82F6",
       nickname: "",
+      nicknameLocked: false,
     },
   };
 }

@@ -15,6 +15,7 @@ export interface FocusSession {
 export interface Settings {
   color: string;
   nickname: string;
+  nicknameLocked: boolean;
 }
 
 export interface AppData {
