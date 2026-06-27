@@ -10,7 +10,17 @@ function formatTime(totalSeconds: number): string {
   return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
 }
 
-type OrientationMode = "checking" | "supported" | "unsupported";
+type OrientationMode = "checking" | "needsPermission" | "supported" | "unsupported";
+
+type DeviceOrientationEventStatic = typeof DeviceOrientationEvent & {
+  requestPermission?: () => Promise<"granted" | "denied">;
+};
+
+function getDOE(): DeviceOrientationEventStatic | undefined {
+  return (typeof DeviceOrientationEvent !== "undefined"
+    ? DeviceOrientationEvent
+    : undefined) as DeviceOrientationEventStatic | undefined;
+}
 
 export default function FocusPage() {
   const router = useRouter();
@@ -50,40 +60,30 @@ export default function FocusPage() {
     };
   }, []);
 
-  useEffect(() => {
-    function handleOrientation(e: DeviceOrientationEvent) {
-      sawOrientationEvent.current = true;
-      setOrientationMode("supported");
-      const beta = e.beta ?? 0;
-      setFaceDown(Math.abs(beta) > 150);
-    }
+  function handleOrientation(e: DeviceOrientationEvent) {
+    sawOrientationEvent.current = true;
+    setOrientationMode("supported");
+    const beta = e.beta ?? 0;
+    setFaceDown(Math.abs(beta) > 150);
+  }
 
-    type DeviceOrientationEventStatic = typeof DeviceOrientationEvent & {
-      requestPermission?: () => Promise<"granted" | "denied">;
-    };
-    const DOE = (typeof DeviceOrientationEvent !== "undefined"
-      ? DeviceOrientationEvent
-      : undefined) as DeviceOrientationEventStatic | undefined;
+  useEffect(() => {
+    const DOE = getDOE();
 
     if (!DOE) {
       setOrientationMode("unsupported");
       return;
     }
 
+    // iOS (Safari, Chrome, Yahoo!, etc. all use the same WebKit engine) only
+    // grants sensor permission when requestPermission() is called directly
+    // inside a user tap — it cannot be requested automatically on page load.
     if (typeof DOE.requestPermission === "function") {
-      DOE.requestPermission()
-        .then((result) => {
-          if (result === "granted") {
-            window.addEventListener("deviceorientation", handleOrientation);
-          } else {
-            setOrientationMode("unsupported");
-          }
-        })
-        .catch(() => setOrientationMode("unsupported"));
-    } else {
-      window.addEventListener("deviceorientation", handleOrientation);
+      setOrientationMode("needsPermission");
+      return;
     }
 
+    window.addEventListener("deviceorientation", handleOrientation);
     const fallbackTimer = setTimeout(() => {
       if (!sawOrientationEvent.current) setOrientationMode("unsupported");
     }, 1500);
@@ -93,6 +93,25 @@ export default function FocusPage() {
       clearTimeout(fallbackTimer);
     };
   }, []);
+
+  function handleRequestPermission() {
+    const DOE = getDOE();
+    if (!DOE?.requestPermission) return;
+
+    DOE.requestPermission()
+      .then((result) => {
+        if (result === "granted") {
+          window.addEventListener("deviceorientation", handleOrientation);
+          const fallbackTimer = setTimeout(() => {
+            if (!sawOrientationEvent.current) setOrientationMode("unsupported");
+          }, 1500);
+          setTimeout(() => clearTimeout(fallbackTimer), 2000);
+        } else {
+          setOrientationMode("unsupported");
+        }
+      })
+      .catch(() => setOrientationMode("unsupported"));
+  }
 
   useEffect(() => {
     setRunning(orientationMode === "supported" && faceDown);
@@ -131,6 +150,15 @@ export default function FocusPage() {
       <p className="text-center text-xs text-gray-500">
         この画面を開いている間は自動消灯しません
       </p>
+
+      {orientationMode === "needsPermission" && (
+        <button
+          onClick={handleRequestPermission}
+          className="rounded-full bg-green-500 px-8 py-4 text-lg font-semibold text-gray-900"
+        >
+          センサーの使用を許可する
+        </button>
+      )}
 
       <button
         onClick={handleFinish}
