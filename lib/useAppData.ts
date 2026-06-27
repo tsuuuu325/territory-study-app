@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { v4 as uuid } from "uuid";
-import { AppData, FocusSession } from "./types";
+import { AppData, FocusSession, Settings } from "./types";
 import { loadAppData, saveAppData, LOCAL_OWNER_ID } from "./storage";
 import { createLandChecker, LandChecker } from "./pointInPolygon";
 import { cellFromLatLng, expandTerritory, minutesToCells, totalAreaKm2 } from "./territory";
@@ -120,5 +120,19 @@ export function useAppData() {
     [data, landChecker]
   );
 
-  return { data, landChecker, pickStartCell, completeFocusSession, claimNewIsland };
+  const updateSettings = useCallback((patch: Partial<Settings>) => {
+    setData((prev) => {
+      const base = prev ?? loadAppData();
+      return { ...base, settings: { ...base.settings, ...patch } };
+    });
+  }, []);
+
+  return {
+    data,
+    landChecker,
+    pickStartCell,
+    completeFocusSession,
+    claimNewIsland,
+    updateSettings,
+  };
 }

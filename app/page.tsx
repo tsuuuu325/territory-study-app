@@ -172,6 +172,15 @@ function HomeContent() {
             集中スタート
           </Link>
         )}
+        {!pickingMode && (
+          <Link
+            href="/settings"
+            className="absolute top-4 right-4 z-[500] flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-lg shadow"
+            aria-label="設定"
+          >
+            ⚙️
+          </Link>
+        )}
       </div>
       <StatsBar
         areaKm2={totalAreaKm2(allOwnedIds)}
