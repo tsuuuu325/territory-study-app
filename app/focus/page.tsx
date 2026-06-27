@@ -21,6 +21,34 @@ export default function FocusPage() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sawOrientationEvent = useRef(false);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+
+  useEffect(() => {
+    if (!("wakeLock" in navigator)) return;
+
+    async function acquireWakeLock() {
+      try {
+        wakeLockRef.current = await navigator.wakeLock.request("screen");
+      } catch {
+        // wake lock not available right now (e.g. low battery mode); timer still works while screen stays on manually
+      }
+    }
+
+    acquireWakeLock();
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible" && wakeLockRef.current === null) {
+        acquireWakeLock();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      wakeLockRef.current?.release().catch(() => {});
+      wakeLockRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     function handleOrientation(e: DeviceOrientationEvent) {
@@ -99,6 +127,9 @@ export default function FocusPage() {
           (faceDown ? "計測中：画面を伏せています" : "スマホを裏返すと計測が始まります")}
         {orientationMode === "unsupported" &&
           "このデバイスでは裏返し検知が使えません（対応スマホのブラウザで開いてください）"}
+      </p>
+      <p className="text-center text-xs text-gray-500">
+        この画面を開いている間は自動消灯しません
       </p>
 
       <button
