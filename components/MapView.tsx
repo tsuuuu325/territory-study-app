@@ -1,8 +1,9 @@
 "use client";
 
-import { cellToBoundary } from "h3-js";
-import { MapContainer, Polygon, TileLayer, useMapEvents } from "react-leaflet";
+import { cellToBoundary, latLngToCell } from "h3-js";
+import { CircleMarker, MapContainer, Polygon, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { H3_RESOLUTION } from "@/lib/territory";
 
 const JAPAN_CENTER: [number, number] = [36.2048, 138.2529];
 const JAPAN_ZOOM = 5;
@@ -20,9 +21,14 @@ interface MapViewProps {
   ownedCellIds: string[];
   color: string;
   onMapClick?: (lat: number, lng: number) => void;
+  pendingPoint?: { lat: number; lng: number } | null;
 }
 
-export default function MapView({ ownedCellIds, color, onMapClick }: MapViewProps) {
+export default function MapView({ ownedCellIds, color, onMapClick, pendingPoint }: MapViewProps) {
+  const pendingCellId = pendingPoint
+    ? latLngToCell(pendingPoint.lat, pendingPoint.lng, H3_RESOLUTION)
+    : null;
+
   return (
     <MapContainer
       center={JAPAN_CENTER}
@@ -47,6 +53,19 @@ export default function MapView({ ownedCellIds, color, onMapClick }: MapViewProp
           }}
         />
       ))}
+      {pendingCellId && (
+        <Polygon
+          positions={cellToBoundary(pendingCellId, false) as [number, number][]}
+          pathOptions={{ color: "#F59E0B", weight: 2, fillColor: "#F59E0B", fillOpacity: 0.5 }}
+        />
+      )}
+      {pendingPoint && (
+        <CircleMarker
+          center={[pendingPoint.lat, pendingPoint.lng]}
+          radius={6}
+          pathOptions={{ color: "#F59E0B", fillColor: "#F59E0B", fillOpacity: 1 }}
+        />
+      )}
     </MapContainer>
   );
 }

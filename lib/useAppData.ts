@@ -7,6 +7,16 @@ import { loadAppData, saveAppData, LOCAL_OWNER_ID } from "./storage";
 import { createLandChecker, LandChecker } from "./pointInPolygon";
 import { cellFromLatLng, expandTerritory, minutesToCells } from "./territory";
 
+export interface CompleteSessionResult {
+  newCellIds: string[];
+  exhausted: boolean;
+  leftoverCells: number;
+}
+
+function nowCell(cellId: string) {
+  return { cellId, ownerId: LOCAL_OWNER_ID, acquiredAt: new Date().toISOString() };
+}
+
 export function useAppData() {
   const [data, setData] = useState<AppData | null>(null);
   const [landChecker, setLandChecker] = useState<LandChecker | null>(null);
@@ -33,19 +43,24 @@ export function useAppData() {
       return {
         ...base,
         startCell: cellId,
-        ownedCells: [{ cellId, ownerId: LOCAL_OWNER_ID, acquiredAt: new Date().toISOString() }],
+        ownedCells: [nowCell(cellId)],
       };
     });
   }, []);
 
   const completeFocusSession = useCallback(
-    (durationMinutes: number): string[] => {
-      if (!data || !landChecker) return [];
-      const cellsEarned = minutesToCells(durationMinutes);
-      if (cellsEarned <= 0) return [];
+    (durationMinutes: number): CompleteSessionResult => {
+      if (!data || !landChecker) {
+        return { newCellIds: [], exhausted: false, leftoverCells: 0 };
+      }
+      const requested = minutesToCells(durationMinutes);
+      if (requested <= 0) {
+        return { newCellIds: [], exhausted: false, leftoverCells: 0 };
+      }
 
       const ownedIds = data.ownedCells.map((c) => c.cellId);
-      const newCellIds = expandTerritory(ownedIds, cellsEarned, landChecker);
+      const newCellIds = expandTerritory(ownedIds, requested, landChecker);
+      const leftoverCells = requested - newCellIds.length;
 
       const session: FocusSession = {
         id: uuid(),
@@ -59,23 +74,43 @@ export function useAppData() {
         const base = prev ?? data;
         return {
           ...base,
-          ownedCells: [
-            ...base.ownedCells,
-            ...newCellIds.map((cellId) => ({
-              cellId,
-              ownerId: LOCAL_OWNER_ID,
-              acquiredAt: new Date().toISOString(),
-            })),
-          ],
+          ownedCells: [...base.ownedCells, ...newCellIds.map(nowCell)],
           totalFocusMinutes: base.totalFocusMinutes + durationMinutes,
           sessions: [...base.sessions, session],
         };
       });
 
-      return newCellIds;
+      return { newCellIds, exhausted: leftoverCells > 0, leftoverCells };
     },
     [data, landChecker]
   );
 
-  return { data, landChecker, pickStartCell, completeFocusSession };
+  /**
+   * Anchors a new island with a free start cell, then expands `leftoverCells`
+   * more cells from it. Used when the previous island ran out of land.
+   */
+  const claimNewIsland = useCallback(
+    (lat: number, lng: number, leftoverCells: number): string[] => {
+      if (!data || !landChecker) return [];
+      if (!landChecker.isLand(lat, lng)) return [];
+
+      const startCellId = cellFromLatLng(lat, lng);
+      const ownedIds = [...data.ownedCells.map((c) => c.cellId), startCellId];
+      const expanded = expandTerritory(ownedIds, leftoverCells, landChecker);
+      const allNew = [startCellId, ...expanded];
+
+      setData((prev) => {
+        const base = prev ?? data;
+        return {
+          ...base,
+          ownedCells: [...base.ownedCells, ...allNew.map(nowCell)],
+        };
+      });
+
+      return allNew;
+    },
+    [data, landChecker]
+  );
+
+  return { data, landChecker, pickStartCell, completeFocusSession, claimNewIsland };
 }

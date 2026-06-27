@@ -67,9 +67,7 @@ export default function FocusPage() {
   }, []);
 
   useEffect(() => {
-    if (orientationMode === "supported") {
-      setRunning(faceDown);
-    }
+    setRunning(orientationMode === "supported" && faceDown);
   }, [orientationMode, faceDown]);
 
   useEffect(() => {
@@ -89,8 +87,6 @@ export default function FocusPage() {
     router.push(`/?completed=${minutes}`);
   }
 
-  const manualMode = orientationMode === "unsupported";
-
   return (
     <div className="flex h-dvh flex-col items-center justify-center gap-8 bg-gray-900 px-6 text-white">
       <div className="text-6xl font-mono font-bold tabular-nums">
@@ -100,20 +96,10 @@ export default function FocusPage() {
       <p className="text-center text-sm text-gray-400">
         {orientationMode === "checking" && "センサーを確認中..."}
         {orientationMode === "supported" &&
-          (faceDown ? "計測中：画面を伏せています" : "画面を伏せると計測が始まります")}
-        {orientationMode === "unsupported" && "スタート/ストップで手動計測してください"}
+          (faceDown ? "計測中：画面を伏せています" : "スマホを裏返すと計測が始まります")}
+        {orientationMode === "unsupported" &&
+          "このデバイスでは裏返し検知が使えません（対応スマホのブラウザで開いてください）"}
       </p>
-
-      {manualMode && (
-        <button
-          onClick={() => setRunning((r) => !r)}
-          className={`rounded-full px-8 py-4 text-lg font-semibold ${
-            running ? "bg-yellow-500 text-gray-900" : "bg-green-500 text-gray-900"
-          }`}
-        >
-          {running ? "ストップ" : "スタート"}
-        </button>
-      )}
 
       <button
         onClick={handleFinish}
