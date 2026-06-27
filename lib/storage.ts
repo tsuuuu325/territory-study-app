@@ -1,3 +1,4 @@
+import { v4 as uuid } from "uuid";
 import { AppData } from "./types";
 
 const STORAGE_KEY = "territory-study-app:data";
@@ -5,6 +6,7 @@ export const LOCAL_OWNER_ID = "local-player";
 
 export function defaultAppData(): AppData {
   return {
+    playerId: uuid(),
     startCell: null,
     ownedCells: [],
     totalFocusMinutes: 0,

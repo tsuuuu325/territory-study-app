@@ -5,7 +5,8 @@ import { v4 as uuid } from "uuid";
 import { AppData, FocusSession } from "./types";
 import { loadAppData, saveAppData, LOCAL_OWNER_ID } from "./storage";
 import { createLandChecker, LandChecker } from "./pointInPolygon";
-import { cellFromLatLng, expandTerritory, minutesToCells } from "./territory";
+import { cellFromLatLng, expandTerritory, minutesToCells, totalAreaKm2 } from "./territory";
+import { upsertRanking } from "./supabase";
 
 export interface CompleteSessionResult {
   newCellIds: string[];
@@ -35,6 +36,13 @@ export function useAppData() {
   useEffect(() => {
     if (data) saveAppData(data);
   }, [data]);
+
+  useEffect(() => {
+    if (!data || data.ownedCells.length === 0) return;
+    const ids = data.ownedCells.map((c) => c.cellId);
+    upsertRanking(data.playerId, data.settings.nickname, totalAreaKm2(ids));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.playerId, data?.ownedCells.length, data?.settings.nickname]);
 
   const pickStartCell = useCallback((lat: number, lng: number) => {
     const cellId = cellFromLatLng(lat, lng);

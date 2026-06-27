@@ -18,6 +18,7 @@ export interface Settings {
 }
 
 export interface AppData {
+  playerId: string;
   startCell: string | null;
   ownedCells: OwnedCell[];
   totalFocusMinutes: number;
