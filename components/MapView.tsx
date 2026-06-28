@@ -46,10 +46,9 @@ export default function MapView({ ownedCellIds, color, onMapClick, pendingPoint 
           key={cellId}
           positions={cellToBoundary(cellId, false) as [number, number][]}
           pathOptions={{
-            color,
-            weight: 1,
+            stroke: false,
             fillColor: color,
-            fillOpacity: 0.45,
+            fillOpacity: 0.55,
           }}
         />
       ))}
