@@ -1,4 +1,4 @@
-import { cellArea, cellToLatLng, gridDisk, latLngToCell, UNITS } from "h3-js";
+import { cellArea, cellToBoundary, cellToLatLng, gridDisk, latLngToCell, UNITS } from "h3-js";
 import { LandChecker } from "./pointInPolygon";
 
 export const H3_RESOLUTION = 7;
@@ -21,8 +21,18 @@ const landCache = new Map<string, boolean>();
 function isCellOnLand(cellId: string, landChecker: LandChecker): boolean {
   const cached = landCache.get(cellId);
   if (cached !== undefined) return cached;
+
   const [lat, lng] = cellToLatLng(cellId);
-  const result = landChecker.isLand(lat, lng);
+  let result = landChecker.isLand(lat, lng);
+
+  if (!result) {
+    // Coastal cells can have their center fall just outside the land
+    // polygon even though most of the hexagon is on land. Checking the
+    // boundary vertices too catches these near-shore false negatives.
+    const boundary = cellToBoundary(cellId, false) as [number, number][];
+    result = boundary.some(([vLat, vLng]) => landChecker.isLand(vLat, vLng));
+  }
+
   landCache.set(cellId, result);
   return result;
 }
