@@ -182,6 +182,15 @@ const DICT: Record<string, Record<Lang, string>> = {
     fr: "Retour à la carte",
     pt: "Voltar ao mapa",
   },
+  conqueredLabel: {
+    ja: "完全制覇",
+    en: "CONQUERED",
+    zh: "完全制霸",
+    ko: "완전 정복",
+    es: "CONQUISTADO",
+    fr: "CONQUIS",
+    pt: "CONQUISTADO",
+  },
   closeNewIsland: {
     ja: "次の島の出発点を選ぶ",
     en: "Pick the next island's start",

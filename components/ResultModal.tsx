@@ -6,8 +6,19 @@ interface ResultModalProps {
   revealingLabel: string;
   closeLabel: string;
   exhaustedNote?: string;
+  celebrate?: boolean;
+  conqueredLabel?: string;
   onClose: () => void;
 }
+
+const CONFETTI = [
+  { top: "8%", left: "12%", rotate: "20deg", color: "#10B981", shape: "rect" },
+  { top: "14%", left: "82%", rotate: "-25deg", color: "#F59E0B", shape: "rect" },
+  { top: "6%", left: "48%", rotate: "10deg", color: "#3B82F6", shape: "rect" },
+  { top: "24%", left: "28%", rotate: "0deg", color: "#EF4444", shape: "circle" },
+  { top: "20%", left: "70%", rotate: "0deg", color: "#8B5CF6", shape: "circle" },
+  { top: "30%", left: "8%", rotate: "-15deg", color: "#3B82F6", shape: "rect" },
+];
 
 export default function ResultModal({
   headline,
@@ -17,13 +28,45 @@ export default function ResultModal({
   revealingLabel,
   closeLabel,
   exhaustedNote,
+  celebrate,
+  conqueredLabel,
   onClose,
 }: ResultModalProps) {
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 px-6">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
-        <p className="text-lg font-semibold text-gray-900">{headline}</p>
-        <p className="mt-2 text-3xl font-bold text-blue-600">{cellsEarnedText}</p>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 px-6">
+      <div className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-white p-7 text-center shadow-xl">
+        {celebrate &&
+          CONFETTI.map((c, i) => (
+            <span
+              key={i}
+              className="pointer-events-none absolute"
+              style={{
+                top: c.top,
+                left: c.left,
+                width: c.shape === "rect" ? 10 : 8,
+                height: c.shape === "rect" ? 16 : 8,
+                background: c.color,
+                borderRadius: c.shape === "rect" ? 2 : "50%",
+                transform: `rotate(${c.rotate})`,
+              }}
+            />
+          ))}
+
+        {celebrate && conqueredLabel && (
+          <p className="text-xs font-semibold tracking-wide text-green-600">{conqueredLabel}</p>
+        )}
+        <p className={celebrate ? "mt-1 text-xl font-bold text-gray-900" : "text-lg font-semibold text-gray-900"}>
+          {headline}
+        </p>
+        <p
+          className={
+            celebrate
+              ? "mt-2 text-5xl font-bold leading-none text-green-600"
+              : "mt-2 text-3xl font-bold text-blue-600"
+          }
+        >
+          {cellsEarnedText}
+        </p>
         <p className="text-sm text-gray-500">{cellsEarnedNote}</p>
         {exhaustedNote && (
           <p className="mt-3 text-sm font-medium text-amber-600">{exhaustedNote}</p>
@@ -31,7 +74,11 @@ export default function ResultModal({
         <button
           onClick={onClose}
           disabled={revealing}
-          className="mt-6 w-full rounded-full bg-blue-600 px-6 py-3 font-semibold text-white disabled:opacity-50"
+          className={
+            celebrate
+              ? "mt-6 w-full rounded-full bg-green-600 px-6 py-3.5 font-semibold text-white disabled:opacity-50"
+              : "mt-6 w-full rounded-full bg-blue-600 px-6 py-3 font-semibold text-white disabled:opacity-50"
+          }
         >
           {revealing ? revealingLabel : closeLabel}
         </button>

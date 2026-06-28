@@ -202,6 +202,8 @@ function HomeContent() {
           revealingLabel={t("revealingLabel")}
           closeLabel={exhausted ? t("closeNewIsland") : t("closeMap")}
           exhaustedNote={exhausted ? t("exhaustedNote") : undefined}
+          celebrate={exhausted}
+          conqueredLabel={t("conqueredLabel")}
           onClose={handleModalClose}
         />
       )}
