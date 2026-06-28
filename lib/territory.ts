@@ -2,7 +2,7 @@ import { cellArea, cellToLatLng, gridDisk, latLngToCell, UNITS } from "h3-js";
 import { LandChecker } from "./pointInPolygon";
 
 export const H3_RESOLUTION = 7;
-export const MINUTES_PER_CELL = 2.4;
+export const MINUTES_PER_CELL = 1;
 
 export function minutesToCells(durationMinutes: number): number {
   return Math.floor(durationMinutes / MINUTES_PER_CELL);
